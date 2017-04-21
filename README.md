@@ -15,9 +15,9 @@ in the scripts/ subfolder.
 ### Train a new model
 To train a new model for a particular data set, simply run
 
-    python train_model.py -d=<dataset> -e=<nb_epochs>
+    python train_model.py -d=<data_set> -e=<nb_epochs>
 
-where </dataset> is one of either mnist, cifar or svhn, and <nb_epochs>
+where <data_set> is one of either mnist, cifar or svhn, and <nb_epochs>
 is an integer indicating the number of epochs to train for. For example,
 to train the MNIST model for 10 epochs, we would run
 
