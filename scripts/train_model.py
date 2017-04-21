@@ -7,7 +7,7 @@ from src.util import get_data, get_model
 def main(args):
     assert args.dataset in ['mnist', 'cifar', 'svhn'], \
         "Dataset parameter must be either 'mnist', 'cifar' or 'svhn'"
-    print('Model type: %s' % args.dataset)
+    print('Dataset: %s' % args.dataset)
     X_train, Y_train, X_test, Y_test = get_data(args.dataset)
     model = get_model(args.dataset)
     model.compile(

@@ -29,15 +29,16 @@ def get_data(dataset='mnist'):
         # the data, shuffled and split between train and test sets
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
     else:
-        # TODO: prepare these dataset files
         from subprocess import call
         print('Downloading SVHN dataset...\n')
         call(
-            "curl -o ../data/svhn_train.mat http://ufldl.stanford.edu/housenumbers/train_32x32.mat",
+            "curl -o ../data/svhn_train.mat "
+            "http://ufldl.stanford.edu/housenumbers/train_32x32.mat",
             shell=True
         )
         call(
-            "curl -o ../data/svhn_test.mat http://ufldl.stanford.edu/housenumbers/test_32x32.mat",
+            "curl -o ../data/svhn_test.mat "
+            "http://ufldl.stanford.edu/housenumbers/test_32x32.mat",
             shell=True
         )
         train = sio.loadmat('../data/svhn_train.mat')
