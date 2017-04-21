@@ -32,7 +32,7 @@ train the model for that data set (details above). Then, simply run
 
     python craft_adv_samples.py -d=<data_set> -a=<attack>
 
-where <data_set> is the same as above and <attack> is one of either 'fgsm,'
+where <data_set> is the same as above and `<attack>` is one of either 'fgsm,'
 'jsma,' 'bim-a,' 'bim-b' or 'all,' indicating which method to use to craft
 adversarial samples. For example, to craft adversarial samples for the
 MNIST model using fgsm, we would run
@@ -41,7 +41,7 @@ MNIST model using fgsm, we would run
 
 If 'all' is chosen (the default), all types of adversarial samples will be
 generated. Arrays holding the adversarial samples are stored in the data/
-subfolder and named X_adv_<attack>.npy.
+subfolder and named X_adv_`<attack>`.npy.
 
 ### Detect adversarial samples
 To run the detection script, you must first train the model and craft
@@ -50,7 +50,7 @@ Then, simply run
 
     python detect_adv_samples.py -d=<data_set> -a=<attack>
 
-where <data_set> and <attack> are the same as described above. For all of the
+where <data_set> and `<attack>` are the same as described above. For all of the
 adversarial samples provided, an equal number of noisy samples will be generated
 and included alongside the original samples as part of the 'negative' class
 for the detector. The perturbation size of these noisy samples is determined
