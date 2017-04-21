@@ -17,16 +17,37 @@ To train a new model for a particular data set, simply run
 
     python train_model.py -d=<data_set> -e=<nb_epochs>
 
-where <data_set> is one of either mnist, cifar or svhn, and <nb_epochs>
+where <data_set> is one of either 'mnist,' 'cifar' or 'svhn,' and <nb_epochs>
 is an integer indicating the number of epochs to train for. For example,
 to train the MNIST model for 10 epochs, we would run
 
     python train_model.py -d=mnist -e=10
 
-The model will be trained and saved into the data/ subfolder.
+The model will be trained and saved into the data/ subfolder and named
+model_<data_set>.h5.
 
 ### Craft adversarial samples
-To
+To craft adversarial samples for a particular data set, you must first
+train the model for that data set (details above). Then, simply run
+
+    python craft_adv_samples.py -d=<data_set> -a=<attack>
+
+where <data_set> is the same as above and <attack> is one of either 'fgsm,'
+'jsma,' 'bim-a,' 'bim-b' or 'all,' indicating which method to use to craft
+adversarial samples. For example, to craft adversarial samples for the
+MNIST model using fgsm, we would run
+
+    python craft_adv_samples.py -d=mnist -a=fgsm
+
+If 'all' is chosen (the default), all types of adversarial samples will be
+generated. Arrays holding the adversarial samples are stored in the data/
+subfolder and named X_adv_<attack>.npy.
 
 ### Detect adversarial samples
-todo
+To run the detection script, you must first train the model and craft
+adversarial samples for each data set you would like to use (details above).
+Then, simply run
+
+    python detect_adv_samples.py -d=<data_set> -a=<attack>
+
+where <data_set> and <attack> are the same as described above.
