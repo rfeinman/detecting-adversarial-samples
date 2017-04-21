@@ -3,7 +3,8 @@ from __future__ import print_function
 
 import scipy.io as sio
 import numpy as np
-
+from tqdm import tqdm
+import keras.backend as K
 from keras.datasets import mnist, cifar10
 from keras.utils import np_utils
 from keras.models import Sequential
@@ -154,3 +155,53 @@ def get_model(dataset='mnist'):
     for layer in layers:
         model.add(layer)
     return model
+
+
+def get_noisy_samples(X_test, X_test_adv, attack):
+    """
+    TODO
+    :param X_test: TODO
+    :param X_test_adv: TODO
+    :param attack: TODO
+    :return:
+    """
+    # TODO: Update this; should compute average perturbation size of \
+    # TODO: adversarial samples and select noise size accordingly; should also \
+    # TODO: use 'attack' parameter to determine the type of noise
+    return np.minimum(
+        np.maximum(
+            X_test + np.random.normal(loc=0, scale=0.25, size=X_test.shape),
+            0
+        ),
+        1
+    )
+
+
+def get_mc_predictions(model, X, nb_iter=50, batch_size=256):
+    """
+
+    :param model:
+    :param X:
+    :param nb_iter:
+    :param batch_size:
+    :return:
+    """
+    output_dim = model.layers[-1].output.shape[-1].value
+
+    get_output = K.function(
+        [model.layers[0].input, K.learning_phase()],
+        [model.layers[-1].output]
+    )
+
+    def predict():
+        n_batches = int(np.ceil(X.shape[0] / float(batch_size)))
+        output = np.zeros(shape=(len(X), output_dim))
+        for i in range(n_batches):
+            output[i * batch_size:(i + 1) * batch_size] = \
+                get_output([X[i * batch_size:(i + 1) * batch_size], 1])[0]
+        return output
+
+    preds_mc = []
+    for i in tqdm(range(nb_iter)):
+        preds_mc.append(predict())
+    return np.asarray(preds_mc)

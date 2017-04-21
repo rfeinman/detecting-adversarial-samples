@@ -50,4 +50,11 @@ Then, simply run
 
     python detect_adv_samples.py -d=<data_set> -a=<attack>
 
-where <data_set> and <attack> are the same as described above.
+where <data_set> and <attack> are the same as described above. For all of the
+adversarial samples provided, an equal number of noisy samples will be generated
+and included alongside the original samples as part of the 'negative' class
+for the detector. The perturbation size of these noisy samples is determined
+based on the average L2 perturbation size of the adversarial samples. Then,
+the Bayesian uncertainty and kernel density features will be computed for each
+of the normal, noisy and adversarial samples. A logistic regression model is
+trained on these features and the detector is built.

@@ -5,7 +5,8 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from cleverhans.utils_tf import model_loss, batch_eval
+from cleverhans.utils_tf import batch_eval
+
 
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     """
