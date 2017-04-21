@@ -1,19 +1,16 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import numpy as np
 import tensorflow as tf
-import keras.backend as K
 from tqdm import tqdm
 
 from cleverhans.utils_tf import model_loss, batch_eval
 
-# # Create TF session and set as Keras backend session
-# gpu_options = tf.GPUOptions(allow_growth=True)
-# sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-# K.set_session(sess)
-
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     """
-    TensorFlow implementation of the Fast Gradient
-    Sign method.
+    Computes symbolic TF tensor for the adversarial samples. This must
+    be evaluate with a session.run call.
     :param x: the input placeholder
     :param predictions: the model's output tensor
     :param eps: the epsilon (input variation parameter)
@@ -82,13 +79,14 @@ def basic_iterative_method(sess, model, X, Y, eps, eps_iter, n_iter=50,
     y = tf.placeholder(tf.float32, shape=(None,)+Y.shape[1:])
     # results will hold the adversarial inputs at each iteration of BIM;
     # thus it will have shape (n_iter, n_samples, n_rows, n_cols, n_channels)
-    results = np.zeros((n_iter, X.shape[0],)+X.shape[1:])
+    results = np.zeros((n_iter, X.shape[0],) + X.shape[1:])
     # Initialize adversarial samples as the original samples, set upper and
     # lower bounds
     X_adv = X
     X_min = X_adv - eps
     X_max = X_adv + eps
     # TODO: explain its, results
+    print('Running BIM iterations...')
     its = {}
     out = set()
     for i in tqdm(range(n_iter)):

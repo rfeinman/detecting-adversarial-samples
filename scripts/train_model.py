@@ -2,7 +2,9 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
+
 from src.util import get_data, get_model
+
 
 def main(args):
     assert args.dataset in ['mnist', 'cifar', 'svhn'], \

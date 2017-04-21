@@ -1,0 +1,5 @@
+numpy
+scipy
+tqdm
+tensorflow >= 1.0
+Keras >= 2.0
