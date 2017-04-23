@@ -12,7 +12,7 @@ arrays. Instructions for running the code are below.
 All of the scripts for running the various parts of the code are located
 in the scripts/ subfolder.
 
-#### Train a new model
+### 1. Train a new model
 To train a new model for a particular data set, simply run
 
     python train_model.py -d=<dataset> -e=<nb_epochs>
@@ -27,7 +27,7 @@ The model will be trained and saved into the data/ subfolder and named
 `model_<dataset>.h5`. An optional batch size parameter is also available,
 specified with `-b=<batch_size>`. The default training batch size is 128.
 
-#### Craft adversarial samples
+### 2. Craft adversarial samples
 To craft adversarial samples for a particular data set, you must first
 train the model for that data set (details above). Then, simply run
 
@@ -45,7 +45,7 @@ generated. Arrays holding the adversarial samples are stored in the data/
 subfolder and named `Adv_<dataset>_<attack>.npy`. An optional batch size
 for evaluating adversarial samples is again provided. The default is 256.
 
-#### Detect adversarial samples
+### 3. Detect adversarial samples
 To run the detection script, you must first train the model and craft
 adversarial samples for each data set you would like to use (details above).
 Then, simply run
