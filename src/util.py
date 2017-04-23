@@ -4,6 +4,7 @@ from __future__ import print_function
 import os
 import multiprocessing as mp
 from subprocess import call
+import warnings
 import numpy as np
 import scipy.io as sio
 from tqdm import tqdm
@@ -23,8 +24,8 @@ from keras.regularizers import l2
 def get_data(dataset='mnist'):
     """
     TODO
-    :param dataset: TODO
-    :return: TODO
+    :param dataset:
+    :return:
     """
     assert dataset in ['mnist', 'cifar', 'svhn'], \
         "dataset parameter must be either 'mnist' 'cifar' or 'svhn'"
@@ -83,8 +84,9 @@ def get_model(dataset='mnist'):
     """
     Takes in a parameter indicating which model type to use ('mnist',
     'cifar' or 'svhn') and returns the appropriate Keras model.
-    :param dataset: TODO
-    :return: TODO
+    :param dataset: A string indicating which dataset we are building
+                    a model for.
+    :return: The model; a Keras 'Sequential' instance.
     """
     assert dataset in ['mnist', 'cifar', 'svhn'], \
         "dataset parameter must be either 'mnist' 'cifar' or 'svhn'"
@@ -164,21 +166,25 @@ def get_model(dataset='mnist'):
     model = Sequential()
     for layer in layers:
         model.add(layer)
+
     return model
 
 
 def get_noisy_samples(X_test, X_test_adv, attack):
     """
     TODO
-    :param X_test: TODO
-    :param X_test_adv: TODO
-    :param attack: TODO
+    :param X_test:
+    :param X_test_adv:
+    :param attack:
     :return:
     """
     # TODO: Update this; should compute average perturbation size of \
     # TODO: adversarial samples and select noise size accordingly; should also \
     # TODO: use 'attack' parameter to determine the type of noise
-    return np.minimum(
+    warnings.warn('Using pre-set perturbation size to craft noisy samples for'
+                  'the time being. Soon, the adversarial perturbation size will'
+                  'be considered.')
+    X_test_noisy = np.minimum(
         np.maximum(
             X_test + np.random.normal(loc=0, scale=0.25, size=X_test.shape),
             0
@@ -186,10 +192,12 @@ def get_noisy_samples(X_test, X_test_adv, attack):
         1
     )
 
+    return X_test_noisy
+
 
 def get_mc_predictions(model, X, nb_iter=50, batch_size=256):
     """
-
+    TODO
     :param model:
     :param X:
     :param nb_iter:
@@ -197,7 +205,6 @@ def get_mc_predictions(model, X, nb_iter=50, batch_size=256):
     :return:
     """
     output_dim = model.layers[-1].output.shape[-1].value
-
     get_output = K.function(
         [model.layers[0].input, K.learning_phase()],
         [model.layers[-1].output]
@@ -214,11 +221,18 @@ def get_mc_predictions(model, X, nb_iter=50, batch_size=256):
     preds_mc = []
     for i in tqdm(range(nb_iter)):
         preds_mc.append(predict())
+
     return np.asarray(preds_mc)
 
 
 def get_deep_representations(model, X, batch_size=256):
-    #last_hidden_layer = f(model)
+    """
+    TODO
+    :param model:
+    :param X:
+    :param batch_size:
+    :return:
+    """
     # last hidden layer is always at index -4
     output_dim = model.layers[-4].output.shape[-1].value
     get_encoding = K.function(
@@ -232,29 +246,33 @@ def get_deep_representations(model, X, batch_size=256):
         output[i * batch_size:(i + 1) * batch_size] = \
             get_encoding([X[i * batch_size:(i + 1) * batch_size], 0])[0]
 
-    #return np.reshape(out, (X.shape[0], -1))
     return output
 
 
 def score_point(tup):
     """
-
+    TODO
     :param tup:
     :return:
     """
     x, kde = tup
+
     return kde.score_samples(np.reshape(x, (1, -1)))[0]
 
 
-def score_samples(kdes, samples, preds):
+def score_samples(kdes, samples, preds, n_jobs=None):
     """
-
+    TODO
     :param kdes:
     :param samples:
     :param preds:
+    :param n_jobs:
     :return:
     """
-    p = mp.Pool()
+    if n_jobs is not None:
+        p = mp.Pool(n_jobs)
+    else:
+        p = mp.Pool()
     results = np.asarray(
         p.map(
             score_point,
@@ -263,16 +281,33 @@ def score_samples(kdes, samples, preds):
     )
     p.close()
     p.join()
+
     return results
 
 
 def normalize(normal, adv, noisy):
+    """
+    TODO
+    :param normal:
+    :param adv:
+    :param noisy:
+    :return:
+    """
     n_samples = len(normal)
     total = scale(np.concatenate((normal, adv, noisy)))
+
     return total[:n_samples], total[n_samples:2*n_samples], total[2*n_samples:]
 
 
 def train_lr(densities_pos, densities_neg, uncerts_pos, uncerts_neg):
+    """
+    TODO
+    :param densities_pos:
+    :param densities_neg:
+    :param uncerts_pos:
+    :param uncerts_neg:
+    :return:
+    """
     values_neg = np.concatenate(
         (densities_neg.reshape((1, -1)),
          uncerts_neg.reshape((1, -1))),
@@ -281,6 +316,7 @@ def train_lr(densities_pos, densities_neg, uncerts_pos, uncerts_neg):
         (densities_pos.reshape((1, -1)),
          uncerts_pos.reshape((1, -1))),
         axis=0).transpose([1, 0])
+
     values = np.concatenate((values_neg, values_pos))
     labels = np.concatenate(
         (np.zeros_like(densities_neg), np.ones_like(densities_pos)))
@@ -291,6 +327,13 @@ def train_lr(densities_pos, densities_neg, uncerts_pos, uncerts_neg):
 
 
 def compute_roc(probs_neg, probs_pos, plot=False):
+    """
+    TODO
+    :param probs_neg:
+    :param probs_pos:
+    :param plot:
+    :return:
+    """
     probs = np.concatenate((probs_neg, probs_pos))
     labels = np.concatenate((np.zeros_like(probs_neg), np.ones_like(probs_pos)))
     fpr, tpr, _ = roc_curve(labels, probs)

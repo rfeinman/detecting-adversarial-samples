@@ -14,7 +14,7 @@ from src.attacks import fast_gradient_sign_method, basic_iterative_method
 
 def craft_one_type(sess, model, X, Y, attack, batch_size):
     """
-
+    TODO
     :param sess:
     :param model:
     :param X:

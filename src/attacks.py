@@ -11,7 +11,7 @@ from cleverhans.utils_tf import batch_eval
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     """
     Computes symbolic TF tensor for the adversarial samples. This must
-    be evaluate with a session.run call.
+    be evaluated with a session.run call.
     :param x: the input placeholder
     :param predictions: the model's output tensor
     :param eps: the epsilon (input variation parameter)
@@ -57,6 +57,18 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
 
 def fast_gradient_sign_method(sess, model, X, Y, eps, clip_min=None,
                               clip_max=None, batch_size=256):
+    """
+    TODO
+    :param sess:
+    :param model:
+    :param X:
+    :param Y:
+    :param eps:
+    :param clip_min:
+    :param clip_max:
+    :param batch_size:
+    :return:
+    """
     # Define TF placeholders for the input and output
     x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
     y = tf.placeholder(tf.float32, shape=(None,) + Y.shape[1:])
@@ -75,6 +87,20 @@ def fast_gradient_sign_method(sess, model, X, Y, eps, clip_min=None,
 
 def basic_iterative_method(sess, model, X, Y, eps, eps_iter, n_iter=50,
                            clip_min=None, clip_max=None, batch_size=256):
+    """
+    TODO
+    :param sess:
+    :param model:
+    :param X:
+    :param Y:
+    :param eps:
+    :param eps_iter:
+    :param n_iter:
+    :param clip_min:
+    :param clip_max:
+    :param batch_size:
+    :return:
+    """
     # Define TF placeholders for the input and output
     x = tf.placeholder(tf.float32, shape=(None,)+X.shape[1:])
     y = tf.placeholder(tf.float32, shape=(None,)+Y.shape[1:])
