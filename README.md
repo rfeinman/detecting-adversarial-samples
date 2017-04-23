@@ -2,13 +2,13 @@
 This repository contains the code for ICML 2017 submission "Detecting
 Adversarial Samples from Artifacts."
 
-## Code Structure
+## A. Code Structure
 The source code is located in the src/ subfolder, and scripts that users will
 run to perform various steps are located in the scripts/ subfolder. An empty
 subfolder, data/, is included for storing trained models and adversarial sample
 arrays. Instructions for running the code are below.
 
-## Running the Code
+## B. Running the Code
 All of the scripts for running the various parts of the code are located
 in the scripts/ subfolder.
 
@@ -36,7 +36,7 @@ train the model for that data set (details above). Then, simply run
 where `<dataset>` is the same as above and `<attack>` is one of either 'fgsm,'
 'jsma,' 'bim-a,' 'bim-b' or 'all,' indicating which method to use to craft
 adversarial samples. For example, to craft adversarial samples for the
-MNIST model using fgsm, we would run
+MNIST model using FGSM, we would run
 
     python craft_adv_samples.py -d=mnist -a=fgsm
 
@@ -61,15 +61,16 @@ the Bayesian uncertainty and kernel density features will be computed for each
 of the normal, noisy and adversarial samples. A logistic regression model is
 trained on these features and the detector is built.
 
-## MNIST Demonstration
+## C. MNIST Demonstration
 Here, a simple demonstration is provided of the commands issued to run the full
-experiment with MNIST, using the FGSM attack. Follow the following steps:
+experiment with MNIST, using the FGSM attack. The following commands are used
+to run all 3 steps:
 
     1. python train_model.py -d=mnist -e=10
     2. python craft_adv_samples.py -d=mnist -a=fgsm
     3. python detect_adv_samples.py -d=mnist -a=fgsm
 
-## Author Notes
+## D. Author Notes
 
 This code depends on the cleverhans repository; however, some of the attack
 code is re-implemented here (e.g. the "fgsm" function) with minor modifications.
