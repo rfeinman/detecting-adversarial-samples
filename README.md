@@ -73,6 +73,6 @@ to run all 3 steps:
 ## Author Notes
 
 This code depends on the cleverhans repository; however, some of the attack
-code is re-implemented here (e.g. the "fgsm" function) with minor modifications.
+code is re-implemented here with minor modifications (e.g. the "fgsm" function).
 When cleverhans 2.0 is released, these modifications will no longer be
 necessary, and this repository will be updated.
