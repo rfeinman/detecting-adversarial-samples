@@ -51,21 +51,6 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
     np.save('../data/Adv_%s_%s.npy' % (args.dataset, args.attack), X_adv)
 
 
-def craft_all_types(sess, model, X, Y, batch_size):
-    """
-
-    :param sess:
-    :param model:
-    :param X:
-    :param Y:
-    :param batch_size:
-    :return:
-    """
-    # TODO
-    raise NotImplementedError("'All' option not yet implemented.")
-    return
-
-
 def main(args):
     assert args.dataset in ['mnist', 'cifar', 'svhn'], \
         "Dataset parameter must be either 'mnist', 'cifar' or 'svhn'"
@@ -84,8 +69,12 @@ def main(args):
                             verbose=0)
     print("Accuracy on the test set: %0.2f%%" % (100*acc))
     if args.attack == 'all':
-        craft_all_types(sess, model, X_test, Y_test, args.batch_size)
+        # Cycle through all attacks
+        for attack in ['fgsm', 'bim-a', 'bim-b', 'jsma', 'cw']:
+            craft_one_type(sess, model, X_test, Y_test, attack,
+                           args.batch_size)
     else:
+        # Craft one specific attack type
         craft_one_type(sess, model, X_test, Y_test, args.attack,
                        args.batch_size)
     print('Adversarial samples crafted and saved to data/ subfolder.')

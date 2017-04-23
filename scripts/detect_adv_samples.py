@@ -11,34 +11,62 @@ from src.util import (get_data, get_noisy_samples, get_mc_predictions,
                       get_deep_representations, score_samples, normalize,
                       train_lr, compute_roc)
 
+# optimal KDE bandwidths that were determined from CV tuning
 BANDWIDTHS = {'mnist': 1.20, 'cifar': 0.26, 'svhn': 1.00}
 
 
-def detect(model, X_train, Y_train, X_test_normal, X_test_adv, X_test_noisy,
-           dataset, batch_size):
+def main(args):
+    assert args.dataset in ['mnist', 'cifar', 'svhn'], \
+        "Dataset parameter must be either 'mnist', 'cifar' or 'svhn'"
+    assert args.attack in ['fgsm', 'bim-a', 'bim-b', 'jsma', 'cw', 'all'], \
+        "Attack parameter must be either 'fgsm', 'bim-a', 'bim-b', " \
+        "'jsma' or 'cw'"
+    assert os.path.isfile('../data/model_%s.h5' % args.dataset), \
+        'model file not found... must first train model using train_model.py.'
+    assert os.path.isfile('../data/Adv_%s_%s.npy' %
+                          (args.dataset, args.attack)), \
+        'adversarial sample file not found... must first craft adversarial ' \
+        'samples using craft_adv_samples.py'
+    # load the model
+    model = load_model('../data/model_%s.h5' % args.dataset)
+    # load the dataset
+    X_train, Y_train, X_test, Y_test = get_data(args.dataset)
+    # check attack type, select adversarial and noisy samples accordingly
+    if args.attack == 'all':
+        # TODO
+        #X_test_adv = ...
+        #X_test_noisy = ...
+        raise NotImplementedError("'All' types detector not yet implemented.")
+    else:
+        # load adversarial samples
+        X_test_adv = np.load('../data/Adv_%s_%s.npy' % (args.dataset,
+                                                        args.attack))
+        # craft an equal number of noisy samples
+        X_test_noisy = get_noisy_samples(X_test, X_test_adv, args.attack)
+
     ## Get Bayesian uncertainty scores
     print('Getting Monte Carlo dropout variance predictions...')
-    uncerts_normal = get_mc_predictions(model, X_test_normal,
-                                        batch_size=batch_size)\
+    uncerts_normal = get_mc_predictions(model, X_test,
+                                        batch_size=args.batch_size) \
         .var(axis=0).mean(axis=1)
     uncerts_adv = get_mc_predictions(model, X_test_adv,
-                                     batch_size=batch_size)\
+                                     batch_size=args.batch_size) \
         .var(axis=0).mean(axis=1)
     uncerts_noisy = get_mc_predictions(model, X_test_noisy,
-                                      batch_size=batch_size)\
+                                       batch_size=args.batch_size) \
         .var(axis=0).mean(axis=1)
 
     ## Get KDE scores
     # Get deep feature representations
     print('Getting deep feature representations...')
     X_train_features = get_deep_representations(model, X_train,
-                                                batch_size=batch_size)
-    X_test_normal_features = get_deep_representations(model, X_test_normal,
-                                                      batch_size=batch_size)
+                                                batch_size=args.batch_size)
+    X_test_normal_features = get_deep_representations(model, X_test,
+                                                      batch_size=args.batch_size)
     X_test_adv_features = get_deep_representations(model, X_test_adv,
-                                                   batch_size=batch_size)
+                                                   batch_size=args.batch_size)
     X_test_noisy_features = get_deep_representations(model, X_test_noisy,
-                                                     batch_size=batch_size)
+                                                     batch_size=args.batch_size)
     # Train one KDE per class
     print('Training KDEs...')
     class_inds = {}
@@ -47,16 +75,16 @@ def detect(model, X_train, Y_train, X_test_normal, X_test_adv, X_test_noisy,
     kdes = {}
     for i in range(Y_train.shape[1]):
         kdes[i] = KernelDensity(kernel='gaussian',
-                                bandwidth=BANDWIDTHS[dataset])\
+                                bandwidth=BANDWIDTHS[args.dataset]) \
             .fit(X_train_features[class_inds[i]])
     # Get model predictions
     print('Computing model predictions...')
-    preds_test_normal = model.predict_classes(X_test_normal, verbose=0,
-                                              batch_size=batch_size)
+    preds_test_normal = model.predict_classes(X_test, verbose=0,
+                                              batch_size=args.batch_size)
     preds_test_adv = model.predict_classes(X_test_adv, verbose=0,
-                                           batch_size=batch_size)
+                                           batch_size=args.batch_size)
     preds_test_noisy = model.predict_classes(X_test_noisy, verbose=0,
-                                             batch_size=batch_size)
+                                             batch_size=args.batch_size)
     # Get density estimates
     print('computing densities...')
     densities_normal = score_samples(
@@ -96,45 +124,17 @@ def detect(model, X_train, Y_train, X_test_normal, X_test_adv, X_test_noisy,
     )
 
     ## Evaluate detector
+    # compute logistic regression model predictions
     probs = lr.predict_proba(values)[:, 1]
-    n_samples = len(X_test_normal)
-    #probs_normal = probs[:n_samples]
-    #probs_noisy = probs[n_samples:2*n_samples]
-    #probs_adv = probs[2*n_samples:]
+    # compute AUC
+    n_samples = len(X_test)
+    # the first 2/3 of 'probs' is the negative class (normal and noisy samples),
+    # and the last 1/3 is the positive class (adversarial samples).
     _, _, auc_score = compute_roc(
-        probs_neg=probs[:2*n_samples],
-        probs_pos=probs[2*n_samples:]
-        #probs_neg=np.concatenate((probs_normal, probs_noisy)),
-        #probs_pos=probs_adv
+        probs_neg=probs[:2 * n_samples],
+        probs_pos=probs[2 * n_samples:]
     )
     print('Detector ROC-AUC score: %0.4f' % auc_score)
-
-
-def main(args):
-    assert args.dataset in ['mnist', 'cifar', 'svhn'], \
-        "Dataset parameter must be either 'mnist', 'cifar' or 'svhn'"
-    assert args.attack in ['fgsm', 'bim-a', 'bim-b', 'jsma', 'cw', 'all'], \
-        "Attack parameter must be either 'fgsm', 'bim-a', 'bim-b', " \
-        "'jsma' or 'cw'"
-    assert os.path.isfile('../data/model_%s.h5' % args.dataset), \
-        'model file not found... must first train model using train_model.py.'
-    assert os.path.isfile('../data/Adv_%s_%s.npy' %
-                          (args.dataset, args.attack)), \
-        'adversarial sample file not found... must first craft adversarial ' \
-        'samples using craft_adv_samples.py'
-    model = load_model('../data/model_%s.h5' % args.dataset)
-    X_train, Y_train, X_test, Y_test = get_data(args.dataset)
-    if args.attack == 'all':
-        # TODO
-        raise NotImplementedError('All types detector not yet implemented.')
-    else:
-        # load adversarial samples
-        X_test_adv = np.load('../data/Adv_%s_%s.npy' % (args.dataset,
-                                                        args.attack))
-        # craft an equal number of noisy samples
-        X_test_noisy = get_noisy_samples(X_test, X_test_adv, args.attack)
-        detect(model, X_train, Y_train, X_test, X_test_adv, X_test_noisy,
-               args.dataset, args.batch_size)
 
 
 if __name__ == "__main__":

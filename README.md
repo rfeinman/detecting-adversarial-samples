@@ -1,6 +1,6 @@
 # Detecting Adversarial Samples from Artifacts
-This repository contains the code for ICML submission "Detecting Adversarial
-Samples from Artifacts."
+This repository contains the code for ICML 2017 submission "Detecting
+Adversarial Samples from Artifacts."
 
 ## Code Structure
 The source code is located in the src/ subfolder, and scripts that users will

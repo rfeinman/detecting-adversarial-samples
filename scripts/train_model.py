@@ -27,6 +27,7 @@ def main(args):
     )
     model.save('../data/model_%s.h5' % args.dataset)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
