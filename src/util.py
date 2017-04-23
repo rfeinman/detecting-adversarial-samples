@@ -7,6 +7,10 @@ from subprocess import call
 import numpy as np
 import scipy.io as sio
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import scale
 import keras.backend as K
 from keras.datasets import mnist, cifar10
 from keras.utils import np_utils
@@ -260,3 +264,45 @@ def score_samples(kdes, samples, preds):
     p.close()
     p.join()
     return results
+
+
+def normalize(normal, adv, noisy):
+    n_samples = len(normal)
+    total = scale(np.concatenate((normal, adv, noisy)))
+    return total[:n_samples], total[n_samples:2*n_samples], total[2*n_samples:]
+
+
+def train_lr(densities_pos, densities_neg, uncerts_pos, uncerts_neg):
+    values_neg = np.concatenate(
+        (densities_neg.reshape((1, -1)),
+         uncerts_neg.reshape((1, -1))),
+        axis=0).transpose([1, 0])
+    values_pos = np.concatenate(
+        (densities_pos.reshape((1, -1)),
+         uncerts_pos.reshape((1, -1))),
+        axis=0).transpose([1, 0])
+    values = np.concatenate((values_neg, values_pos))
+    labels = np.concatenate(
+        (np.zeros_like(densities_neg), np.ones_like(densities_pos)))
+
+    lr = LogisticRegressionCV(n_jobs=-1).fit(values, labels)
+
+    return values, labels, lr
+
+
+def compute_roc(probs_neg, probs_pos, plot=False):
+    probs = np.concatenate((probs_neg, probs_pos))
+    labels = np.concatenate((np.zeros_like(probs_neg), np.ones_like(probs_pos)))
+    fpr, tpr, _ = roc_curve(labels, probs)
+    auc_score = auc(fpr, tpr)
+    if plot:
+        plt.figure(figsize=(7, 6))
+        plt.plot(fpr, tpr, color='blue',
+                 label='ROC (AUC = %0.4f)' % auc_score)
+        plt.legend(loc='lower right')
+        plt.title("ROC Curve")
+        plt.xlabel("FPR")
+        plt.ylabel("TPR")
+        plt.show()
+
+    return fpr, tpr, auc_score

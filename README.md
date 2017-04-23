@@ -24,7 +24,8 @@ to train the MNIST model for 10 epochs, we would run
     python train_model.py -d=mnist -e=10
 
 The model will be trained and saved into the data/ subfolder and named
-`model_<dataset>.h5`.
+`model_<dataset>.h5`. An optional batch size parameter is also available,
+specified with `-b=<batch_size>`. The default training batch size is 128.
 
 ### Craft adversarial samples
 To craft adversarial samples for a particular data set, you must first
@@ -41,7 +42,8 @@ MNIST model using fgsm, we would run
 
 If 'all' is chosen (the default), all types of adversarial samples will be
 generated. Arrays holding the adversarial samples are stored in the data/
-subfolder and named `Adv_<dataset>_<attack>.npy`.
+subfolder and named `Adv_<dataset>_<attack>.npy`. An optional batch size
+for evaluating adversarial samples is again provided. The default is 256.
 
 ### Detect adversarial samples
 To run the detection script, you must first train the model and craft
@@ -58,3 +60,16 @@ based on the average L2 perturbation size of the adversarial samples. Then,
 the Bayesian uncertainty and kernel density features will be computed for each
 of the normal, noisy and adversarial samples. A logistic regression model is
 trained on these features and the detector is built.
+
+## MNIST Demonstration
+
+    python train_model.py -d=mnist -e=10
+    python craft_adv_samples.py -d=mnist -a=fgsm
+    python detect_adv_samples.py -d=mnist -a=fgsm
+
+## Author Notes
+
+This code depends on the cleverhans repository; however, some of the attack
+code is re-implemented here (e.g. the "fgsm" function) with minor modifications.
+When cleverhans 2.0 is released, these modifications will no longer be
+necessary, and this repository will be updated.

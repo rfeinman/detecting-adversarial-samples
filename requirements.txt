@@ -2,6 +2,7 @@ numpy
 scipy
 tqdm
 sklearn
+matplotlib
 tensorflow >= 1.0
 Keras >= 2.0
 cleverhans >= 1.0.0

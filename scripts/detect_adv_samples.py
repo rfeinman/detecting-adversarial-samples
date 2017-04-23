@@ -8,30 +8,33 @@ from sklearn.neighbors import KernelDensity
 from keras.models import load_model
 
 from src.util import (get_data, get_noisy_samples, get_mc_predictions,
-                      get_deep_representations, score_samples)
+                      get_deep_representations, score_samples, normalize,
+                      train_lr, compute_roc)
 
 BANDWIDTHS = {'mnist': 1.20, 'cifar': 0.26, 'svhn': 1.00}
 
 
-def detect(model, X_train, Y_train, X_test, X_test_adv, X_test_noisy,
+def detect(model, X_train, Y_train, X_test_normal, X_test_adv, X_test_noisy,
            dataset, batch_size):
-    ### Get Bayesian uncertainty scores ###
+    ## Get Bayesian uncertainty scores
     print('Getting Monte Carlo dropout variance predictions...')
-    uncert_normal = get_mc_predictions(model, X_test, batch_size=batch_size)\
+    uncerts_normal = get_mc_predictions(model, X_test_normal,
+                                        batch_size=batch_size)\
         .var(axis=0).mean(axis=1)
-    uncert_adv = get_mc_predictions(model, X_test_adv, batch_size=batch_size)\
+    uncerts_adv = get_mc_predictions(model, X_test_adv,
+                                     batch_size=batch_size)\
         .var(axis=0).mean(axis=1)
-    uncert_noisy = get_mc_predictions(model, X_test_noisy,
+    uncerts_noisy = get_mc_predictions(model, X_test_noisy,
                                       batch_size=batch_size)\
         .var(axis=0).mean(axis=1)
 
-    ### Get KDE scores ###
+    ## Get KDE scores
     # Get deep feature representations
     print('Getting deep feature representations...')
     X_train_features = get_deep_representations(model, X_train,
                                                 batch_size=batch_size)
-    X_test_features = get_deep_representations(model, X_test,
-                                               batch_size=batch_size)
+    X_test_normal_features = get_deep_representations(model, X_test_normal,
+                                                      batch_size=batch_size)
     X_test_adv_features = get_deep_representations(model, X_test_adv,
                                                    batch_size=batch_size)
     X_test_noisy_features = get_deep_representations(model, X_test_noisy,
@@ -48,8 +51,8 @@ def detect(model, X_train, Y_train, X_test, X_test_adv, X_test_noisy,
             .fit(X_train_features[class_inds[i]])
     # Get model predictions
     print('Computing model predictions...')
-    preds_test = model.predict_classes(X_test, verbose=0,
-                                       batch_size=batch_size)
+    preds_test_normal = model.predict_classes(X_test_normal, verbose=0,
+                                              batch_size=batch_size)
     preds_test_adv = model.predict_classes(X_test_adv, verbose=0,
                                            batch_size=batch_size)
     preds_test_noisy = model.predict_classes(X_test_noisy, verbose=0,
@@ -58,8 +61,8 @@ def detect(model, X_train, Y_train, X_test, X_test_adv, X_test_noisy,
     print('computing densities...')
     densities_normal = score_samples(
         kdes,
-        X_test_features,
-        preds_test
+        X_test_normal_features,
+        preds_test_normal
     )
     densities_adv = score_samples(
         kdes,
@@ -72,7 +75,39 @@ def detect(model, X_train, Y_train, X_test, X_test_adv, X_test_noisy,
         preds_test_noisy
     )
 
-    ### Build detector ###
+    ## Z-score the uncertainty and density values
+    uncerts_normal_z, uncerts_adv_z, uncerts_noisy_z = normalize(
+        uncerts_normal,
+        uncerts_adv,
+        uncerts_noisy
+    )
+    densities_normal_z, densities_adv_z, densities_noisy_z = normalize(
+        densities_normal,
+        densities_adv,
+        densities_noisy
+    )
+
+    ## Build detector
+    values, labels, lr = train_lr(
+        densities_pos=densities_adv_z,
+        densities_neg=np.concatenate((densities_normal_z, densities_noisy_z)),
+        uncerts_pos=uncerts_adv_z,
+        uncerts_neg=np.concatenate((uncerts_normal_z, uncerts_noisy_z))
+    )
+
+    ## Evaluate detector
+    probs = lr.predict_proba(values)[:, 1]
+    n_samples = len(X_test_normal)
+    #probs_normal = probs[:n_samples]
+    #probs_noisy = probs[n_samples:2*n_samples]
+    #probs_adv = probs[2*n_samples:]
+    _, _, auc_score = compute_roc(
+        probs_neg=probs[:2*n_samples],
+        probs_pos=probs[2*n_samples:]
+        #probs_neg=np.concatenate((probs_normal, probs_noisy)),
+        #probs_pos=probs_adv
+    )
+    print('Detector ROC-AUC score: %0.4f' % auc_score)
 
 
 def main(args):
