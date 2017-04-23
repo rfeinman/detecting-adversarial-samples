@@ -1,8 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import scipy.io as sio
+import os
+import multiprocessing as mp
+from subprocess import call
 import numpy as np
+import scipy.io as sio
 from tqdm import tqdm
 import keras.backend as K
 from keras.datasets import mnist, cifar10
@@ -31,18 +34,20 @@ def get_data(dataset='mnist'):
         # the data, shuffled and split between train and test sets
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
     else:
-        from subprocess import call
-        print('Downloading SVHN dataset...\n')
-        call(
-            "curl -o ../data/svhn_train.mat "
-            "http://ufldl.stanford.edu/housenumbers/train_32x32.mat",
-            shell=True
-        )
-        call(
-            "curl -o ../data/svhn_test.mat "
-            "http://ufldl.stanford.edu/housenumbers/test_32x32.mat",
-            shell=True
-        )
+        if not os.path.isfile("../data/svhn_train.mat"):
+            print('Downloading SVHN train set...')
+            call(
+                "curl -o ../data/svhn_train.mat "
+                "http://ufldl.stanford.edu/housenumbers/train_32x32.mat",
+                shell=True
+            )
+        if not os.path.isfile("../data/svhn_test.mat"):
+            print('Downloading SVHN test set...')
+            call(
+                "curl -o ../data/svhn_test.mat "
+                "http://ufldl.stanford.edu/housenumbers/test_32x32.mat",
+                shell=True
+            )
         train = sio.loadmat('../data/svhn_train.mat')
         test = sio.loadmat('../data/svhn_test.mat')
         X_train = np.transpose(train['X'], axes=[3, 0, 1, 2])
@@ -125,7 +130,8 @@ def get_model(dataset='mnist'):
             Dense(512, kernel_regularizer=l2(0.01), bias_regularizer=l2(0.01)),
             Activation('relu'),
             Dropout(0.5),
-            Dense(10, activation='softmax')
+            Dense(10),
+            Activation('softmax')
         ]
     else:
         # SVHN model
@@ -205,3 +211,52 @@ def get_mc_predictions(model, X, nb_iter=50, batch_size=256):
     for i in tqdm(range(nb_iter)):
         preds_mc.append(predict())
     return np.asarray(preds_mc)
+
+
+def get_deep_representations(model, X, batch_size=256):
+    #last_hidden_layer = f(model)
+    # last hidden layer is always at index -4
+    output_dim = model.layers[-4].output.shape[-1].value
+    get_encoding = K.function(
+        [model.layers[0].input, K.learning_phase()],
+        [model.layers[-4].output]
+    )
+
+    n_batches = int(np.ceil(X.shape[0] / float(batch_size)))
+    output = np.zeros(shape=(len(X), output_dim))
+    for i in range(n_batches):
+        output[i * batch_size:(i + 1) * batch_size] = \
+            get_encoding([X[i * batch_size:(i + 1) * batch_size], 0])[0]
+
+    #return np.reshape(out, (X.shape[0], -1))
+    return output
+
+
+def score_point(tup):
+    """
+
+    :param tup:
+    :return:
+    """
+    x, kde = tup
+    return kde.score_samples(np.reshape(x, (1, -1)))[0]
+
+
+def score_samples(kdes, samples, preds):
+    """
+
+    :param kdes:
+    :param samples:
+    :param preds:
+    :return:
+    """
+    p = mp.Pool()
+    results = np.asarray(
+        p.map(
+            score_point,
+            [(x, kdes[i]) for x, i in zip(samples, preds)]
+        )
+    )
+    p.close()
+    p.join()
+    return results

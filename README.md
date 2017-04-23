@@ -41,7 +41,7 @@ MNIST model using fgsm, we would run
 
 If 'all' is chosen (the default), all types of adversarial samples will be
 generated. Arrays holding the adversarial samples are stored in the data/
-subfolder and named `X_adv_<attack>.npy`.
+subfolder and named `Adv_<dataset>_<attack>.npy`.
 
 ### Detect adversarial samples
 To run the detection script, you must first train the model and craft

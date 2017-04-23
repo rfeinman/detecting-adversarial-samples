@@ -55,8 +55,8 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
     return adv_x
 
 
-def fast_gradient_sign_method(sess, model, X, Y, eps,
-                              clip_min=None, clip_max=None):
+def fast_gradient_sign_method(sess, model, X, Y, eps, clip_min=None,
+                              clip_max=None, batch_size=256):
     # Define TF placeholders for the input and output
     x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
     y = tf.placeholder(tf.float32, shape=(None,) + Y.shape[1:])
@@ -67,14 +67,14 @@ def fast_gradient_sign_method(sess, model, X, Y, eps,
     )
     X_adv, = batch_eval(
         sess, [x, y], [adv_x],
-        [X, Y], args={'batch_size': 512}
+        [X, Y], args={'batch_size': batch_size}
     )
 
     return X_adv
 
 
 def basic_iterative_method(sess, model, X, Y, eps, eps_iter, n_iter=50,
-                           clip_min=None, clip_max=None):
+                           clip_min=None, clip_max=None, batch_size=256):
     # Define TF placeholders for the input and output
     x = tf.placeholder(tf.float32, shape=(None,)+X.shape[1:])
     y = tf.placeholder(tf.float32, shape=(None,)+Y.shape[1:])
@@ -97,7 +97,7 @@ def basic_iterative_method(sess, model, X, Y, eps, eps_iter, n_iter=50,
         )
         X_adv, = batch_eval(
             sess, [x, y], [adv_x],
-            [X_adv, Y], args={'batch_size': 512}
+            [X_adv, Y], args={'batch_size': batch_size}
         )
         X_adv = np.maximum(np.minimum(X_adv, X_max), X_min)
         results[i] = X_adv

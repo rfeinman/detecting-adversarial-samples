@@ -20,7 +20,7 @@ def main(args):
     model.fit(
         X_train, Y_train,
         epochs=args.epochs,
-        batch_size=128,
+        batch_size=args.batch_size,
         shuffle=True,
         verbose=1,
         validation_data=(X_test, Y_test)
@@ -39,6 +39,12 @@ if __name__ == "__main__":
         help="The number of epochs to train for.",
         required=False, type=int
     )
+    parser.add_argument(
+        '-b', '--batch_size',
+        help="The batch size to use for training.",
+        required=False, type=int
+    )
     parser.set_defaults(epochs=20)
+    parser.set_defaults(batch_size=128)
     args = parser.parse_args()
     main(args)

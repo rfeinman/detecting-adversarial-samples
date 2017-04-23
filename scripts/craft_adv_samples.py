@@ -12,54 +12,56 @@ from src.util import get_data
 from src.attacks import fast_gradient_sign_method, basic_iterative_method
 
 
-def craft_one_type(sess, model, X_test, Y_test, attack):
+def craft_one_type(sess, model, X, Y, attack, batch_size):
     """
 
     :param sess:
     :param model:
-    :param X_test:
-    :param Y_test:
+    :param X:
+    :param Y:
     :param attack:
+    :param batch_size:
     :return:
     """
     if attack == 'fgsm':
-        X_test_adv = fast_gradient_sign_method(
-            sess, model, X_test, Y_test, eps=0.35, clip_min=0., clip_max=1.
+        X_adv = fast_gradient_sign_method(
+            sess, model, X, Y, eps=0.35, clip_min=0.,
+            clip_max=1., batch_size=batch_size
         )
-    elif attack == 'bim-a':
+    elif attack in ['bim-a', 'bim-b']:
         its, results = basic_iterative_method(
-            sess, model, X_test, Y_test, eps=0.35,
-            eps_iter=0.02, clip_min=0., clip_max=1.
+            sess, model, X, Y, eps=0.35, eps_iter=0.02,
+            clip_min=0., clip_max=1., batch_size=batch_size
         )
-        #TODO
-        raise NotImplementedError('JSMA attack not yet implemented.')
-    elif attack == 'bim-b':
-        its, results = basic_iterative_method(
-            sess, model, X_test, Y_test, eps=0.35,
-            eps_iter=0.02, clip_min=0., clip_max=1.
-        )
-        X_test_adv = results[-1]
+        if attack == 'bim-a':
+            # TODO: BIM-A attack
+            raise NotImplementedError('BIM-A attack not yet implemented.')
+        else:
+            # BIM-B attack
+            X_adv = results[-1]
     elif attack == 'jsma':
-        #TODO
+        # TODO
         raise NotImplementedError('JSMA attack not yet implemented.')
     else:
-        #TODO
+        # TODO
         raise NotImplementedError('CW attack not yet implemented.')
-    _, acc = model.evaluate(X_test_adv, Y_test, batch_size=512, verbose=0)
+    _, acc = model.evaluate(X_adv, Y, batch_size=batch_size,
+                            verbose=0)
     print("Accuracy on the adversarial test set: %0.2f%%" % (100 * acc))
-    np.save('../data/X_adv_%s.npy' % args.attack, X_test_adv)
+    np.save('../data/Adv_%s_%s.npy' % (args.dataset, args.attack), X_adv)
 
 
-def craft_all_types(sess, model, X_test, Y_test):
+def craft_all_types(sess, model, X, Y, batch_size):
     """
 
     :param sess:
     :param model:
-    :param X_test:
-    :param Y_test:
+    :param X:
+    :param Y:
+    :param batch_size:
     :return:
     """
-    #TODO
+    # TODO
     raise NotImplementedError("'All' option not yet implemented.")
     return
 
@@ -73,17 +75,20 @@ def main(args):
     assert os.path.isfile('../data/model_%s.h5' % args.dataset), \
         'model file not found... must first train model using train_model.py.'
     print('Dataset: %s. Attack: %s' % (args.dataset, args.attack))
-    # create TF session, set it as Keras backend
+    # Create TF session, set it as Keras backend
     sess = tf.Session()
     K.set_session(sess)
     model = load_model('../data/model_%s.h5' % args.dataset)
     _, _, X_test, Y_test = get_data(args.dataset)
-    _, acc = model.evaluate(X_test, Y_test, batch_size=512, verbose=0)
+    _, acc = model.evaluate(X_test, Y_test, batch_size=args.batch_size,
+                            verbose=0)
     print("Accuracy on the test set: %0.2f%%" % (100*acc))
     if args.attack == 'all':
-        craft_all_types(sess, model, X_test, Y_test)
+        craft_all_types(sess, model, X_test, Y_test, args.batch_size)
     else:
-        craft_one_type(sess, model, X_test, Y_test, args.attack)
+        craft_one_type(sess, model, X_test, Y_test, args.attack,
+                       args.batch_size)
+    print('Adversarial samples crafted and saved to data/ subfolder.')
     sess.close()
 
 
@@ -100,6 +105,12 @@ if __name__ == "__main__":
              " or 'all'",
         required=False, type=str
     )
+    parser.add_argument(
+        '-b', '--batch_size',
+        help="The batch size to use for training.",
+        required=False, type=int
+    )
     parser.set_defaults(attack='all')
+    parser.set_defaults(batch_size=256)
     args = parser.parse_args()
     main(args)
