@@ -43,7 +43,8 @@ MNIST model using FGSM, we would run
 If 'all' is chosen (the default), all types of adversarial samples will be
 generated. Arrays holding the adversarial samples are stored in the data/
 subfolder and named `Adv_<dataset>_<attack>.npy`. An optional batch size
-for evaluating adversarial samples is again provided. The default is 256.
+parameter for evaluating adversarial samples is again provided
+(`-b=<batch_size>`). The default is 256.
 
 ### 3. Detect adversarial samples
 To run the detection script, you must first train the model and craft
@@ -52,7 +53,8 @@ Then, simply run
 
     python detect_adv_samples.py -d=<dataset> -a=<attack>
 
-where `<dataset>` and `<attack>` are the same as described above. For all of the
+where `<dataset>` and `<attack>` are the same as described above. An optional
+batch size parameter is again provided (`-b=<batch_size>`). For all of the
 adversarial samples provided, an equal number of noisy samples will be generated
 and included alongside the original samples as part of the 'negative' class
 for the detector. The perturbation size of these noisy samples is determined
