@@ -2,13 +2,13 @@
 This repository contains the code for ICML 2017 submission "Detecting
 Adversarial Samples from Artifacts."
 
-## A. Code Structure
+## Code Structure
 The source code is located in the src/ subfolder, and scripts that users will
 run to perform various steps are located in the scripts/ subfolder. An empty
 subfolder, data/, is included for storing trained models and adversarial sample
 arrays. Instructions for running the code are below.
 
-## B. Running the Code
+## Running the Code
 All of the scripts for running the various parts of the code are located
 in the scripts/ subfolder.
 
@@ -61,7 +61,7 @@ the Bayesian uncertainty and kernel density features will be computed for each
 of the normal, noisy and adversarial samples. A logistic regression model is
 trained on these features and the detector is built.
 
-## C. MNIST Demonstration
+## MNIST Demonstration
 Here, a simple demonstration is provided of the commands issued to run the full
 experiment with MNIST, using the FGSM attack. The following commands are used
 to run all 3 steps:
@@ -70,7 +70,7 @@ to run all 3 steps:
     2. python craft_adv_samples.py -d=mnist -a=fgsm
     3. python detect_adv_samples.py -d=mnist -a=fgsm
 
-## D. Author Notes
+## Author Notes
 
 This code depends on the cleverhans repository; however, some of the attack
 code is re-implemented here (e.g. the "fgsm" function) with minor modifications.
