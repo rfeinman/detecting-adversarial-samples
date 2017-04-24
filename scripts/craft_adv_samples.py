@@ -9,7 +9,8 @@ import keras.backend as K
 from keras.models import load_model
 
 from src.util import get_data
-from src.attacks import fast_gradient_sign_method, basic_iterative_method
+from src.attacks import (fast_gradient_sign_method, basic_iterative_method,
+                         saliency_map_method)
 
 
 def craft_one_type(sess, model, X, Y, attack, batch_size):
@@ -24,11 +25,13 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
     :return:
     """
     if attack == 'fgsm':
+        print('Crafting fgsm adversarial samples...')
         X_adv = fast_gradient_sign_method(
             sess, model, X, Y, eps=0.35, clip_min=0.,
             clip_max=1., batch_size=batch_size
         )
     elif attack in ['bim-a', 'bim-b']:
+        print('Crafting %s adversarial samples...' % attack)
         its, results = basic_iterative_method(
             sess, model, X, Y, eps=0.35, eps_iter=0.02,
             clip_min=0., clip_max=1., batch_size=batch_size
@@ -40,10 +43,12 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
             # BIM-B attack
             X_adv = results[-1]
     elif attack == 'jsma':
-        # TODO
-        raise NotImplementedError('JSMA attack not yet implemented.')
+        print('Crafting jsma adversarial samples. This may take a while...')
+        X_adv = saliency_map_method(
+            sess, model, X, Y, theta=1, gamma=0.1, clip_min=0., clip_max=1.
+        )
     else:
-        # TODO
+        # TODO: CW attack
         raise NotImplementedError('CW attack not yet implemented.')
     _, acc = model.evaluate(X_adv, Y, batch_size=batch_size,
                             verbose=0)
