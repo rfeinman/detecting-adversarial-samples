@@ -25,6 +25,7 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
     :return:
     """
     if attack == 'fgsm':
+        # FGSM attack
         print('Crafting fgsm adversarial samples...')
         X_adv = fast_gradient_sign_method(
             sess, model, X, Y, eps=0.35, clip_min=0.,
@@ -37,12 +38,13 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
             clip_min=0., clip_max=1., batch_size=batch_size
         )
         if attack == 'bim-a':
-            # TODO: BIM-A attack
-            raise NotImplementedError('BIM-A attack not yet implemented.')
+            # BIM-A attack
+            X_adv = np.asarray([results[its[i], i] for i in range(len(Y))])
         else:
             # BIM-B attack
             X_adv = results[-1]
     elif attack == 'jsma':
+        # JSMA attack
         print('Crafting jsma adversarial samples. This may take a while...')
         X_adv = saliency_map_method(
             sess, model, X, Y, theta=1, gamma=0.1, clip_min=0., clip_max=1.
