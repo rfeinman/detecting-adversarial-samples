@@ -242,6 +242,18 @@ def basic_iterative_method(sess, model, X, Y, eps, eps_iter, n_iter=50,
 
 def saliency_map_method(sess, model, X, Y, theta, gamma, clip_min=None,
                         clip_max=None):
+    """
+    TODO
+    :param sess:
+    :param model:
+    :param X:
+    :param Y:
+    :param theta:
+    :param gamma:
+    :param clip_min:
+    :param clip_max:
+    :return:
+    """
     nb_classes = Y.shape[1]
     # Define TF placeholder for the input
     x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
