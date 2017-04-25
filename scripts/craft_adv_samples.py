@@ -12,14 +12,22 @@ from src.util import get_data
 from src.attacks import (fast_gradient_sign_method, basic_iterative_method,
                          saliency_map_method)
 
+# FGSM & BIM attack parameters that were chosen
+ATTACK_PARAMS = {
+    'mnist': {'eps': 0.300, 'eps_iter': 0.010},
+    'cifar': {'eps': 0.050, 'eps_iter': 0.005},
+    'svhn': {'eps': 0.130, 'eps_iter': 0.010}
+}
 
-def craft_one_type(sess, model, X, Y, attack, batch_size):
+
+def craft_one_type(sess, model, X, Y, dataset, attack, batch_size):
     """
     TODO
     :param sess:
     :param model:
     :param X:
     :param Y:
+    :param dataset:
     :param attack:
     :param batch_size:
     :return:
@@ -28,14 +36,15 @@ def craft_one_type(sess, model, X, Y, attack, batch_size):
         # FGSM attack
         print('Crafting fgsm adversarial samples...')
         X_adv = fast_gradient_sign_method(
-            sess, model, X, Y, eps=0.35, clip_min=0.,
+            sess, model, X, Y, eps=ATTACK_PARAMS[dataset]['eps'], clip_min=0.,
             clip_max=1., batch_size=batch_size
         )
     elif attack in ['bim-a', 'bim-b']:
         print('Crafting %s adversarial samples...' % attack)
         its, results = basic_iterative_method(
-            sess, model, X, Y, eps=0.35, eps_iter=0.02,
-            clip_min=0., clip_max=1., batch_size=batch_size
+            sess, model, X, Y, eps=ATTACK_PARAMS[dataset]['eps'],
+            eps_iter=ATTACK_PARAMS[dataset]['eps_iter'], clip_min=0.,
+            clip_max=1., batch_size=batch_size
         )
         if attack == 'bim-a':
             # BIM-A attack
@@ -78,11 +87,11 @@ def main(args):
     if args.attack == 'all':
         # Cycle through all attacks
         for attack in ['fgsm', 'bim-a', 'bim-b', 'jsma', 'cw']:
-            craft_one_type(sess, model, X_test, Y_test, attack,
+            craft_one_type(sess, model, X_test, Y_test, args.dataset, attack,
                            args.batch_size)
     else:
         # Craft one specific attack type
-        craft_one_type(sess, model, X_test, Y_test, args.attack,
+        craft_one_type(sess, model, X_test, Y_test, args.dataset, args.attack,
                        args.batch_size)
     print('Adversarial samples crafted and saved to data/ subfolder.')
     sess.close()

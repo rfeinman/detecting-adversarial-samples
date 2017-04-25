@@ -20,6 +20,14 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras.regularizers import l2
 
+# Gaussian noise scale sizes that were determined so that the average
+# L-2 perturbation size is equal to that of the adversarial samples
+STDEVS = {
+    'mnist': {'fgsm': 0.310, 'bim-a': 0.128, 'bim-b': 0.265},
+    'cifar': {'fgsm': 0.050, 'bim-a': 0.009, 'bim-b': 0.039},
+    'svhn': {'fgsm': 0.310, 'bim-a': 0.128, 'bim-b': 0.265}
+}
+
 
 def get_data(dataset='mnist'):
     """
@@ -170,27 +178,54 @@ def get_model(dataset='mnist'):
     return model
 
 
-def get_noisy_samples(X_test, X_test_adv, attack):
+def flip(x, nb_diff):
+    """
+    Helper function for get_noisy_samples
+    :param x:
+    :param nb_diff:
+    :return:
+    """
+    original_shape = x.shape
+    x = np.reshape(x, (-1,))
+    candidate_inds = np.where(x < 1.)[0]
+    assert candidate_inds.shape[0] >= nb_diff
+    inds = np.random.choice(candidate_inds, nb_diff)
+    x[inds] = 1.
+
+    return np.reshape(x, original_shape)
+
+
+def get_noisy_samples(X_test, X_test_adv, dataset, attack):
     """
     TODO
     :param X_test:
     :param X_test_adv:
+    :param dataset:
     :param attack:
     :return:
     """
-    # TODO: Update this; should compute average perturbation size of \
-    # TODO: adversarial samples and select noise size accordingly; should also \
-    # TODO: use 'attack' parameter to determine the type of noise
-    warnings.warn('Using pre-set perturbation size to craft noisy samples for'
-                  'the time being. Soon, the adversarial perturbation size will'
-                  'be considered.')
-    X_test_noisy = np.minimum(
-        np.maximum(
-            X_test + np.random.normal(loc=0, scale=0.25, size=X_test.shape),
-            0
-        ),
-        1
-    )
+    if attack in ['jsma', 'cw']:
+        X_test_noisy = np.zeros_like(X_test)
+        for i in range(len(X_test)):
+            nb_diff = len(np.where(X_test[i] != X_test_adv[i])[0])
+            X_test_noisy[i] = flip(X_test[i], nb_diff)
+    else:
+        # TODO: Update this; should compute average perturbation size of \
+        # TODO: adversarial samples and select noise size accordingly.
+        warnings.warn(
+            "Using pre-set Gaussian scale sizes to craft noisy samples. If "
+            "you've altered the eps/eps-iter parameters of the attacks used, "
+            "you'll need to update these. In the future, scale sizes will be "
+            "inferred automatically from the adversarial samples."
+        )
+        X_test_noisy = np.minimum(
+            np.maximum(
+                X_test + np.random.normal(loc=0, scale=STDEVS[dataset][attack],
+                                          size=X_test.shape),
+                0
+            ),
+            1
+        )
 
     return X_test_noisy
 

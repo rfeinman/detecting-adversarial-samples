@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import os
 import argparse
+import warnings
 import numpy as np
 from sklearn.neighbors import KernelDensity
 from keras.models import load_model
@@ -11,7 +12,7 @@ from src.util import (get_data, get_noisy_samples, get_mc_predictions,
                       get_deep_representations, score_samples, normalize,
                       train_lr, compute_roc)
 
-# optimal KDE bandwidths that were determined from CV tuning
+# Optimal KDE bandwidths that were determined from CV tuning
 BANDWIDTHS = {'mnist': 1.20, 'cifar': 0.26, 'svhn': 1.00}
 
 
@@ -27,22 +28,43 @@ def main(args):
                           (args.dataset, args.attack)), \
         'adversarial sample file not found... must first craft adversarial ' \
         'samples using craft_adv_samples.py'
-    # load the model
+    print('Loading the data and model...')
+    # Load the model
     model = load_model('../data/model_%s.h5' % args.dataset)
-    # load the dataset
+    # Load the dataset
     X_train, Y_train, X_test, Y_test = get_data(args.dataset)
-    # check attack type, select adversarial and noisy samples accordingly
+    # Check attack type, select adversarial and noisy samples accordingly
+    print('Loading noisy and adversarial samples...')
     if args.attack == 'all':
         # TODO
         #X_test_adv = ...
         #X_test_noisy = ...
         raise NotImplementedError("'All' types detector not yet implemented.")
     else:
-        # load adversarial samples
+        # Load adversarial samples
         X_test_adv = np.load('../data/Adv_%s_%s.npy' % (args.dataset,
                                                         args.attack))
-        # craft an equal number of noisy samples
-        X_test_noisy = get_noisy_samples(X_test, X_test_adv, args.attack)
+        # Craft an equal number of noisy samples
+        X_test_noisy = get_noisy_samples(X_test, X_test_adv, args.dataset,
+                                         args.attack)
+
+    # Check model accuracies on each sample type
+    for s_type, dataset in zip(['normal', 'noisy', 'adversarial'],
+                               [X_test, X_test_noisy, X_test_adv]):
+        _, acc = model.evaluate(dataset, Y_test, batch_size=args.batch_size,
+                                verbose=0)
+        print("Accuracy on the %s test set: %0.2f%%" % (s_type, 100 * acc))
+        if not s_type == 'normal':
+            # Compute average perturbation size
+            l2_diff = np.linalg.norm(
+                dataset.reshape((len(X_test), -1)) -
+                X_test.reshape((len(X_test), -1)),
+                axis=1
+            ).mean()
+            print("Average L-2 perturbation size of the %s test set: %0.2f" %
+                  (s_type, l2_diff))
+    # import sys
+    # sys.exit(0)
 
     ## Get Bayesian uncertainty scores
     print('Getting Monte Carlo dropout variance predictions...')
@@ -73,6 +95,9 @@ def main(args):
     for i in range(Y_train.shape[1]):
         class_inds[i] = np.where(Y_train.argmax(axis=1) == i)[0]
     kdes = {}
+    warnings.warn("Using pre-set kernel bandwidths that were determined optimal"
+                  "for the specific CNN models of the paper. If you've changed"
+                  "your model, you'll need to re-optimize the bandwidth.")
     for i in range(Y_train.shape[1]):
         kdes[i] = KernelDensity(kernel='gaussian',
                                 bandwidth=BANDWIDTHS[args.dataset]) \
