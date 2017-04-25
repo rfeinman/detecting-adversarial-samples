@@ -63,7 +63,7 @@ def craft_one_type(sess, model, X, Y, dataset, attack, batch_size):
         raise NotImplementedError('CW attack not yet implemented.')
     _, acc = model.evaluate(X_adv, Y, batch_size=batch_size,
                             verbose=0)
-    print("Accuracy on the adversarial test set: %0.2f%%" % (100 * acc))
+    print("Model accuracy on the adversarial test set: %0.2f%%" % (100 * acc))
     np.save('../data/Adv_%s_%s.npy' % (args.dataset, args.attack), X_adv)
 
 

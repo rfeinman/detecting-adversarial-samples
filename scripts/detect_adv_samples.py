@@ -53,7 +53,7 @@ def main(args):
                                [X_test, X_test_noisy, X_test_adv]):
         _, acc = model.evaluate(dataset, Y_test, batch_size=args.batch_size,
                                 verbose=0)
-        print("Accuracy on the %s test set: %0.2f%%" % (s_type, 100 * acc))
+        print("Model accuracy on the %s test set: %0.2f%%" % (s_type, 100 * acc))
         if not s_type == 'normal':
             # Compute average perturbation size
             l2_diff = np.linalg.norm(

@@ -25,7 +25,7 @@ from keras.regularizers import l2
 STDEVS = {
     'mnist': {'fgsm': 0.310, 'bim-a': 0.128, 'bim-b': 0.265},
     'cifar': {'fgsm': 0.050, 'bim-a': 0.009, 'bim-b': 0.039},
-    'svhn': {'fgsm': 0.310, 'bim-a': 0.128, 'bim-b': 0.265}
+    'svhn': {'fgsm': 0.132, 'bim-a': 0.015, 'bim-b': 0.122}
 }
 
 
