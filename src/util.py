@@ -27,6 +27,8 @@ STDEVS = {
     'cifar': {'fgsm': 0.050, 'bim-a': 0.009, 'bim-b': 0.039},
     'svhn': {'fgsm': 0.132, 'bim-a': 0.015, 'bim-b': 0.122}
 }
+# Set random seed
+np.random.seed(0)
 
 
 def get_data(dataset='mnist'):
@@ -101,11 +103,7 @@ def get_model(dataset='mnist'):
     if dataset == 'mnist':
         # MNIST model
         layers = [
-            Conv2D(
-                64, (3, 3),
-                padding='valid',
-                input_shape=(28, 28, 1)
-            ),
+            Conv2D(64, (3, 3), padding='valid', input_shape=(28, 28, 1)),
             Activation('relu'),
             Conv2D(64, (3, 3)),
             Activation('relu'),
@@ -121,7 +119,7 @@ def get_model(dataset='mnist'):
     elif dataset == 'cifar':
         # CIFAR-10 model
         layers = [
-            Conv2D(32, (3, 3), input_shape=(32, 32, 3), padding='same'),
+            Conv2D(32, (3, 3), padding='same', input_shape=(32, 32, 3)),
             Activation('relu'),
             Conv2D(32, (3, 3), padding='same'),
             Activation('relu'),
@@ -150,11 +148,7 @@ def get_model(dataset='mnist'):
     else:
         # SVHN model
         layers = [
-            Conv2D(
-                64, (3, 3),
-                padding='valid',
-                input_shape=(32, 32, 3)
-            ),
+            Conv2D(64, (3, 3), padding='valid', input_shape=(32, 32, 3)),
             Activation('relu'),
             Conv2D(64, (3, 3)),
             Activation('relu'),
@@ -186,8 +180,8 @@ def flip(x, nb_diff):
     :return:
     """
     original_shape = x.shape
-    x = np.reshape(x, (-1,))
-    candidate_inds = np.where(x < 1.)[0]
+    x = np.copy(np.reshape(x, (-1,)))
+    candidate_inds = np.where(x < 0.99)[0]
     assert candidate_inds.shape[0] >= nb_diff
     inds = np.random.choice(candidate_inds, nb_diff)
     x[inds] = 1.
@@ -207,17 +201,18 @@ def get_noisy_samples(X_test, X_test_adv, dataset, attack):
     if attack in ['jsma', 'cw']:
         X_test_noisy = np.zeros_like(X_test)
         for i in range(len(X_test)):
+            # Count the number of pixels that are different
             nb_diff = len(np.where(X_test[i] != X_test_adv[i])[0])
+            # Randomly flip an equal number of pixels (flip means move to max
+            # value of 1)
             X_test_noisy[i] = flip(X_test[i], nb_diff)
     else:
-        # TODO: Update this; should compute average perturbation size of \
-        # TODO: adversarial samples and select noise size accordingly.
-        warnings.warn(
-            "Using pre-set Gaussian scale sizes to craft noisy samples. If "
-            "you've altered the eps/eps-iter parameters of the attacks used, "
-            "you'll need to update these. In the future, scale sizes will be "
-            "inferred automatically from the adversarial samples."
-        )
+        warnings.warn("Using pre-set Gaussian scale sizes to craft noisy "
+                      "samples. If you've altered the eps/eps-iter parameters "
+                      "of the attacks used, you'll need to update these. In "
+                      "the future, scale sizes will be inferred automatically "
+                      "from the adversarial samples.")
+        # Add Gaussian noise to the samples
         X_test_noisy = np.minimum(
             np.maximum(
                 X_test + np.random.normal(loc=0, scale=STDEVS[dataset][attack],
