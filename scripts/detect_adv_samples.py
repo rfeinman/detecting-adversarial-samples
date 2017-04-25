@@ -36,7 +36,7 @@ def main(args):
     # Check attack type, select adversarial and noisy samples accordingly
     print('Loading noisy and adversarial samples...')
     if args.attack == 'all':
-        # TODO
+        # TODO: implement 'all' option
         #X_test_adv = ...
         #X_test_noisy = ...
         raise NotImplementedError("'All' types detector not yet implemented.")
@@ -47,7 +47,6 @@ def main(args):
         # Craft an equal number of noisy samples
         X_test_noisy = get_noisy_samples(X_test, X_test_adv, args.dataset,
                                          args.attack)
-
     # Check model accuracies on each sample type
     for s_type, dataset in zip(['normal', 'noisy', 'adversarial'],
                                [X_test, X_test_noisy, X_test_adv]):
@@ -63,8 +62,9 @@ def main(args):
             ).mean()
             print("Average L-2 perturbation size of the %s test set: %0.2f" %
                   (s_type, l2_diff))
-    # import sys
-    # sys.exit(0)
+    # TODO: Refine the normal, noisy and adversarial sets to only include \
+    # TODO: samples for which the original version was correctly classified
+    # TODO: by the model
 
     ## Get Bayesian uncertainty scores
     print('Getting Monte Carlo dropout variance predictions...')
@@ -95,9 +95,10 @@ def main(args):
     for i in range(Y_train.shape[1]):
         class_inds[i] = np.where(Y_train.argmax(axis=1) == i)[0]
     kdes = {}
-    warnings.warn("Using pre-set kernel bandwidths that were determined optimal"
-                  "for the specific CNN models of the paper. If you've changed"
-                  "your model, you'll need to re-optimize the bandwidth.")
+    warnings.warn("Using pre-set kernel bandwidths that were determined "
+                  "optimal for the specific CNN models of the paper. If you've "
+                  "changed your model, you'll need to re-optimize the "
+                  "bandwidth.")
     for i in range(Y_train.shape[1]):
         kdes[i] = KernelDensity(kernel='gaussian',
                                 bandwidth=BANDWIDTHS[args.dataset]) \
@@ -149,11 +150,11 @@ def main(args):
     )
 
     ## Evaluate detector
-    # compute logistic regression model predictions
+    # Compute logistic regression model predictions
     probs = lr.predict_proba(values)[:, 1]
-    # compute AUC
+    # Compute AUC
     n_samples = len(X_test)
-    # the first 2/3 of 'probs' is the negative class (normal and noisy samples),
+    # The first 2/3 of 'probs' is the negative class (normal and noisy samples),
     # and the last 1/3 is the positive class (adversarial samples).
     _, _, auc_score = compute_roc(
         probs_neg=probs[:2 * n_samples],

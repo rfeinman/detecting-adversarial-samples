@@ -40,6 +40,7 @@ def craft_one_type(sess, model, X, Y, dataset, attack, batch_size):
             clip_max=1., batch_size=batch_size
         )
     elif attack in ['bim-a', 'bim-b']:
+        # BIM attack
         print('Crafting %s adversarial samples...' % attack)
         its, results = basic_iterative_method(
             sess, model, X, Y, eps=ATTACK_PARAMS[dataset]['eps'],
@@ -47,10 +48,13 @@ def craft_one_type(sess, model, X, Y, dataset, attack, batch_size):
             clip_max=1., batch_size=batch_size
         )
         if attack == 'bim-a':
-            # BIM-A attack
+            # BIM-A
+            # For each sample, select the time step where that sample first
+            # became misclassified
             X_adv = np.asarray([results[its[i], i] for i in range(len(Y))])
         else:
-            # BIM-B attack
+            # BIM-B
+            # For each sample, select the very last time step
             X_adv = results[-1]
     elif attack == 'jsma':
         # JSMA attack
