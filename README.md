@@ -2,7 +2,7 @@
 This repository contains the code for ICML 2017 submission "Detecting
 Adversarial Samples from Artifacts."
 
-## Requirements & Set-up
+## Requirements & Setup
 This code repository requires Keras > 2.0 and TensorFlow. Keras must be
 configured to use TensorFlow backend. A full list of requirements can be found
 in `requirements.txt`. On UNIX machines, after cloning this repository, it is
