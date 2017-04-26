@@ -52,9 +52,10 @@ def main(args):
                                [X_test, X_test_noisy, X_test_adv]):
         _, acc = model.evaluate(dataset, Y_test, batch_size=args.batch_size,
                                 verbose=0)
-        print("Model accuracy on the %s test set: %0.2f%%" % (s_type, 100 * acc))
+        print("Model accuracy on the %s test set: %0.2f%%" %
+              (s_type, 100 * acc))
+        # Compute and display average perturbation sizes
         if not s_type == 'normal':
-            # Compute average perturbation size
             l2_diff = np.linalg.norm(
                 dataset.reshape((len(X_test), -1)) -
                 X_test.reshape((len(X_test), -1)),
@@ -62,20 +63,25 @@ def main(args):
             ).mean()
             print("Average L-2 perturbation size of the %s test set: %0.2f" %
                   (s_type, l2_diff))
-    # TODO: Refine the normal, noisy and adversarial sets to only include \
-    # TODO: samples for which the original version was correctly classified
-    # TODO: by the model
+    # Refine the normal, noisy and adversarial sets to only include samples for
+    # which the original version was correctly classified by the model
+    preds_test = model.predict_classes(X_test, verbose=0,
+                                       batch_size=args.batch_size)
+    inds_correct = np.where(preds_test == Y_test.argmax(axis=1))[0]
+    X_test = X_test[inds_correct]
+    X_test_noisy = X_test_noisy[inds_correct]
+    X_test_adv = X_test_adv[inds_correct]
 
     ## Get Bayesian uncertainty scores
     print('Getting Monte Carlo dropout variance predictions...')
     uncerts_normal = get_mc_predictions(model, X_test,
                                         batch_size=args.batch_size) \
         .var(axis=0).mean(axis=1)
-    uncerts_adv = get_mc_predictions(model, X_test_adv,
-                                     batch_size=args.batch_size) \
-        .var(axis=0).mean(axis=1)
     uncerts_noisy = get_mc_predictions(model, X_test_noisy,
                                        batch_size=args.batch_size) \
+        .var(axis=0).mean(axis=1)
+    uncerts_adv = get_mc_predictions(model, X_test_adv,
+                                     batch_size=args.batch_size) \
         .var(axis=0).mean(axis=1)
 
     ## Get KDE scores
@@ -85,10 +91,10 @@ def main(args):
                                                 batch_size=args.batch_size)
     X_test_normal_features = get_deep_representations(model, X_test,
                                                       batch_size=args.batch_size)
-    X_test_adv_features = get_deep_representations(model, X_test_adv,
-                                                   batch_size=args.batch_size)
     X_test_noisy_features = get_deep_representations(model, X_test_noisy,
                                                      batch_size=args.batch_size)
+    X_test_adv_features = get_deep_representations(model, X_test_adv,
+                                                   batch_size=args.batch_size)
     # Train one KDE per class
     print('Training KDEs...')
     class_inds = {}
@@ -107,10 +113,10 @@ def main(args):
     print('Computing model predictions...')
     preds_test_normal = model.predict_classes(X_test, verbose=0,
                                               batch_size=args.batch_size)
-    preds_test_adv = model.predict_classes(X_test_adv, verbose=0,
-                                           batch_size=args.batch_size)
     preds_test_noisy = model.predict_classes(X_test_noisy, verbose=0,
                                              batch_size=args.batch_size)
+    preds_test_adv = model.predict_classes(X_test_adv, verbose=0,
+                                           batch_size=args.batch_size)
     # Get density estimates
     print('computing densities...')
     densities_normal = score_samples(
@@ -118,15 +124,15 @@ def main(args):
         X_test_normal_features,
         preds_test_normal
     )
-    densities_adv = score_samples(
-        kdes,
-        X_test_adv_features,
-        preds_test_adv
-    )
     densities_noisy = score_samples(
         kdes,
         X_test_noisy_features,
         preds_test_noisy
+    )
+    densities_adv = score_samples(
+        kdes,
+        X_test_adv_features,
+        preds_test_adv
     )
 
     ## Z-score the uncertainty and density values
