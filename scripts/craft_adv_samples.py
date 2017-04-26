@@ -110,16 +110,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '-a', '--attack',
-        help="Attack to use; either 'fgsm', 'bim-a', 'bim-b', 'jsma', 'cw'"
-             " or 'all'",
-        required=False, type=str
+        help="Attack to use; either 'fgsm', 'bim-a', 'bim-b', 'jsma', 'cw' "
+             "or 'all'",
+        required=True, type=str
     )
     parser.add_argument(
         '-b', '--batch_size',
         help="The batch size to use for training.",
         required=False, type=int
     )
-    parser.set_defaults(attack='all')
     parser.set_defaults(batch_size=256)
     args = parser.parse_args()
     main(args)
