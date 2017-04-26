@@ -8,6 +8,7 @@ configured to use TensorFlow backend. A full list of requirements can be found
 in `requirements.txt`. On UNIX machines, after cloning this repository, it is
 recommended that you add the path to the repository to your `PYTHONPATH`
 environment variable to enable imports from any folder:
+
     export PYTHONPATH="/path/to/AdversarialDetection":$PYTHONPATH
 
 
