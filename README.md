@@ -2,6 +2,15 @@
 This repository contains the code for ICML 2017 submission "Detecting
 Adversarial Samples from Artifacts."
 
+## Requirements & Set-up
+This code repository requires Keras > 2.0 and TensorFlow. Keras must be
+configured to use TensorFlow backend. A full list of requirements can be found
+in `requirements.txt`. On UNIX machines, after cloning this repository, it is
+recommended that you add the path to the repository to your `PYTHONPATH`
+environment variable to enable imports from any folder:
+    export PYTHONPATH="/path/to/AdversarialDetection":$PYTHONPATH
+
+
 ## Code Structure
 The source code is located in the src/ subfolder, and scripts that users will
 run to perform various steps are located in the scripts/ subfolder. An empty
