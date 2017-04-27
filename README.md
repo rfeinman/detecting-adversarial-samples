@@ -28,8 +28,9 @@ To train a new model for a particular data set, simply run
     python train_model.py -d=<dataset> -e=<nb_epochs>
 
 where `<dataset>` is one of either 'mnist,' 'cifar' or 'svhn,' and `<nb_epochs>`
-is an integer indicating the number of epochs to train for. For example,
-to train the MNIST model for 10 epochs, we would run
+is an integer indicating the number of epochs to train for. We recommend using
+10 epochs for MNIST, and 60 for each of CIFAR and SVHN. For example, to train
+the MNIST model for 10 epochs, we would run
 
     python train_model.py -d=mnist -e=10
 
