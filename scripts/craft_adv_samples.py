@@ -83,6 +83,7 @@ def main(args):
     # Create TF session, set it as Keras backend
     sess = tf.Session()
     K.set_session(sess)
+    K.set_learning_phase(0)
     model = load_model('../data/model_%s.h5' % args.dataset)
     _, _, X_test, Y_test = get_data(args.dataset)
     _, acc = model.evaluate(X_test, Y_test, batch_size=args.batch_size,
