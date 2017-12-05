@@ -100,10 +100,10 @@ def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
     # by removing all features that are already at their maximum values (if
     # increasing input features---otherwise, at their minimum value).
     if increase:
-        search_domain = set([i for i in xrange(nb_features)
+        search_domain = set([i for i in range(nb_features)
                              if adv_x[0, i] < clip_max])
     else:
-        search_domain = set([i for i in xrange(nb_features)
+        search_domain = set([i for i in range(nb_features)
                              if adv_x[0, i] > clip_min])
 
     # Initialize the loop variables
