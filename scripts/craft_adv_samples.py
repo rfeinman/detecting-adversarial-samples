@@ -8,9 +8,9 @@ import tensorflow as tf
 import keras.backend as K
 from keras.models import load_model
 
-from src.util import get_data
-from src.attacks import (fast_gradient_sign_method, basic_iterative_method,
-                         saliency_map_method)
+from detect.util import get_data
+from detect.attacks import (fast_gradient_sign_method, basic_iterative_method,
+                            saliency_map_method)
 
 # FGSM & BIM attack parameters that were chosen
 ATTACK_PARAMS = {

@@ -8,9 +8,9 @@ import numpy as np
 from sklearn.neighbors import KernelDensity
 from keras.models import load_model
 
-from src.util import (get_data, get_noisy_samples, get_mc_predictions,
-                      get_deep_representations, score_samples, normalize,
-                      train_lr, compute_roc)
+from detect.util import (get_data, get_noisy_samples, get_mc_predictions,
+                         get_deep_representations, score_samples, normalize,
+                         train_lr, compute_roc)
 
 # Optimal KDE bandwidths that were determined from CV tuning
 BANDWIDTHS = {'mnist': 1.20, 'cifar': 0.26, 'svhn': 1.00}

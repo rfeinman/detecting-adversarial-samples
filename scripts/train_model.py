@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import argparse
 
-from src.util import get_data, get_model
+from detect.util import get_data, get_model
 
 
 def main(args):
