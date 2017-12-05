@@ -156,8 +156,6 @@ def saliency_map_method(sess, model, X, Y, theta, gamma, clip_min=None,
     :return:
     """
     nb_classes = Y.shape[1]
-    # Define TF placeholder for the input
-    x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
     X_adv = np.zeros_like(X)
     # Instantiate a SaliencyMapMethod attack object
     jsma = SaliencyMapMethod(model, back='tf', sess=sess)
