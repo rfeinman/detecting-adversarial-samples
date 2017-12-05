@@ -3,6 +3,6 @@ scipy
 tqdm
 sklearn
 matplotlib
-tensorflow >= 1.0
-Keras >= 2.0
-cleverhans >= 1.0.0
+tensorflow >= 1.4
+Keras >= 2.1
+cleverhans >= 2.0

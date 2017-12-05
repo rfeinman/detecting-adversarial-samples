@@ -88,10 +88,3 @@ to run all 3 steps:
     1. python train_model.py -d=mnist -e=10
     2. python craft_adv_samples.py -d=mnist -a=fgsm
     3. python detect_adv_samples.py -d=mnist -a=fgsm
-
-## Author Notes
-
-This code depends on the cleverhans repository; however, some of the attack
-code is re-implemented here with minor modifications (e.g. the "fgsm" function).
-When cleverhans 2.0 is released, these modifications will no longer be
-necessary, and this repository will be updated.

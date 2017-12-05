@@ -1,15 +1,12 @@
 from __future__ import division, absolute_import, print_function
 
-import copy
 from collections import defaultdict
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-
 from cleverhans.utils import other_classes
 from cleverhans.utils_tf import batch_eval, model_argmax
-from cleverhans.attacks_tf import (jacobian_graph, jacobian,
-                                   apply_perturbations, saliency_map)
+from cleverhans.attacks import SaliencyMapMethod
 
 
 def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
@@ -58,105 +55,6 @@ def fgsm(x, predictions, eps, clip_min=None, clip_max=None, y=None):
 
     return adv_x
 
-
-def jsma(sess, x, predictions, grads, sample, target, theta, gamma,
-         increase, nb_classes, clip_min, clip_max, verbose=False):
-    """
-    TensorFlow implementation of the jacobian-based saliency map method (JSMA).
-    :param sess: TF session
-    :param x: the input placeholder
-    :param predictions: the model's symbolic output (linear output,
-        pre-softmax)
-    :param sample: numpy array with sample input
-    :param target: target class for sample input
-    :param theta: delta for each feature adjustment
-    :param gamma: a float between 0 - 1 indicating the maximum distortion
-        percentage
-    :param increase: boolean; true if we are increasing pixels, false otherwise
-    :param nb_classes: integer indicating the number of classes in the model
-    :param clip_min: optional parameter that can be used to set a minimum
-                    value for components of the example returned
-    :param clip_max: optional parameter that can be used to set a maximum
-                    value for components of the example returned
-    :param verbose: boolean; whether to print status updates or not
-    :return: an adversarial sample
-    """
-
-    # Copy the source sample and define the maximum number of features
-    # (i.e. the maximum number of iterations) that we may perturb
-    adv_x = copy.copy(sample)
-    # count the number of features. For MNIST, 1x28x28 = 784; for
-    # CIFAR, 3x32x32 = 3072; etc.
-    nb_features = np.product(adv_x.shape[1:])
-    # reshape sample for sake of standardization
-    original_shape = adv_x.shape
-    adv_x = np.reshape(adv_x, (1, nb_features))
-    # compute maximum number of iterations
-    max_iters = np.floor(nb_features * gamma / 2)
-    if verbose:
-        print('Maximum number of iterations: {0}'.format(max_iters))
-
-    # Compute our initial search domain. We optimize the initial search domain
-    # by removing all features that are already at their maximum values (if
-    # increasing input features---otherwise, at their minimum value).
-    if increase:
-        search_domain = set([i for i in range(nb_features)
-                             if adv_x[0, i] < clip_max])
-    else:
-        search_domain = set([i for i in range(nb_features)
-                             if adv_x[0, i] > clip_min])
-
-    # Initialize the loop variables
-    iteration = 0
-    adv_x_original_shape = np.reshape(adv_x, original_shape)
-    current = model_argmax(sess, x, predictions, adv_x_original_shape)
-
-    # Repeat this main loop until we have achieved misclassification
-    while (current != target and iteration < max_iters and
-           len(search_domain) > 1):
-        # Reshape the adversarial example
-        adv_x_original_shape = np.reshape(adv_x, original_shape)
-
-        # Compute the Jacobian components
-        grads_target, grads_others = jacobian(sess, x, grads, target,
-                                              adv_x_original_shape,
-                                              nb_features, nb_classes)
-
-        # Compute the saliency map for each of our target classes
-        # and return the two best candidate features for perturbation
-        i, j, search_domain = saliency_map(
-            grads_target, grads_others, search_domain, increase)
-
-        # Apply the perturbation to the two input features selected previously
-        adv_x = apply_perturbations(
-            i, j, adv_x, increase, theta, clip_min, clip_max)
-
-        # Update our current prediction by querying the model
-        current = model_argmax(sess, x, predictions, adv_x_original_shape)
-
-        # Update loop variables
-        iteration += 1
-
-        # This process may take a while, so outputting progress regularly
-        if iteration % 5 == 0 and verbose:
-            msg = 'Current iteration: {0} - Current Prediction: {1}'
-            print(msg.format(iteration, current))
-
-    # Compute the ratio of pixels perturbed by the algorithm
-    percent_perturbed = float(iteration * 2) / nb_features
-
-    # Report success when the adversarial example is misclassified in the
-    # target class
-    if current == target:
-        if verbose:
-            print('Successful')
-        return np.reshape(adv_x, original_shape), 1, percent_perturbed
-    else:
-        if verbose:
-            print('Unsuccesful')
-        return np.reshape(adv_x, original_shape), 0, percent_perturbed
-
-
 def fast_gradient_sign_method(sess, model, X, Y, eps, clip_min=None,
                               clip_max=None, batch_size=256):
     """
@@ -185,7 +83,6 @@ def fast_gradient_sign_method(sess, model, X, Y, eps, clip_min=None,
     )
 
     return X_adv
-
 
 def basic_iterative_method(sess, model, X, Y, eps, eps_iter, nb_iter=50,
                            clip_min=None, clip_max=None, batch_size=256):
@@ -244,11 +141,10 @@ def basic_iterative_method(sess, model, X, Y, eps, eps_iter, nb_iter=50,
 
     return its, results
 
-
 def saliency_map_method(sess, model, X, Y, theta, gamma, clip_min=None,
                         clip_max=None):
     """
-    TODO
+
     :param sess:
     :param model:
     :param X:
@@ -262,16 +158,24 @@ def saliency_map_method(sess, model, X, Y, theta, gamma, clip_min=None,
     nb_classes = Y.shape[1]
     # Define TF placeholder for the input
     x = tf.placeholder(tf.float32, shape=(None,) + X.shape[1:])
-    # Define model gradients
-    grads = jacobian_graph(model(x), x, nb_classes)
     X_adv = np.zeros_like(X)
+    # Instantiate a SaliencyMapMethod attack object
+    jsma = SaliencyMapMethod(model, back='tf', sess=sess)
+    jsma_params = {'theta': theta, 'gamma': gamma,
+                   'clip_min': clip_min, 'clip_max': clip_max,
+                   'y_target': None}
     for i in tqdm(range(len(X))):
+        # Get the sample
+        sample = X[i:(i+1)]
+        # First, record the current class of the sample
         current_class = int(np.argmax(Y[i]))
-        target_class = np.random.choice(other_classes(nb_classes, current_class))
-        X_adv[i], _, _ = jsma(
-            sess, x, model(x), grads, X[i:(i+1)], target_class, theta=theta,
-            gamma=gamma, increase=True, nb_classes=nb_classes,
-            clip_min=clip_min, clip_max=clip_max
-        )
+        # Randomly choose a target class
+        target_class = np.random.choice(other_classes(nb_classes,
+                                                      current_class))
+        # This call runs the Jacobian-based saliency map approach
+        one_hot_target = np.zeros((1, nb_classes), dtype=np.float32)
+        one_hot_target[0, target_class] = 1
+        jsma_params['y_target'] = one_hot_target
+        X_adv[i] = jsma.generate_np(sample, **jsma_params)
 
     return X_adv
