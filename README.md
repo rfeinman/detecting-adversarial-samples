@@ -1,7 +1,7 @@
 # Detecting Adversarial Samples from Artifacts
 This repository contains the code for the paper [Detecting
 Adversarial Samples from Artifacts](https://arxiv.org/abs/1703.00410)
-(Feinman et al. 2017).
+(Feinman et al., 2017).
 
 ## Requirements & Setup
 This code repository requires Keras > 2.0 and TensorFlow. Keras must be
